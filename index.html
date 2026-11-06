@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>财报五格体检表</title>
+<style>
+  *{box-sizing:border-box}
+  :root{
+    --paper:#faf7f0;--card:#fff;--line:#e8e0d3;--line2:#d8cfbe;
+    --ink:#26221c;--ink2:#6b6259;--ink3:#958c80;--accent:#b98a2f;
+    --good:#1d7a3d;--goodbg:#e4f4e7;--warn:#8f6200;--warnbg:#fdf3d7;--bad:#bd3527;--badbg:#fceae7;
+  }
+  body{
+    margin:0;padding:28px 16px 80px;background:var(--paper);color:var(--ink);
+    font:15px/1.65 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:760px;margin:0 auto}
+  h1{font-size:26px;letter-spacing:-.01em;margin:0 0 6px;font-weight:700}
+  .sub{color:var(--ink2);font-size:13.5px;margin:0 0 22px;max-width:60ch}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px}
+  .card.base{background:#fdfbf6;border-color:var(--line2)}
+  .card h2{font-size:16px;margin:0 0 3px;display:flex;align-items:center;gap:9px;font-weight:650}
+  .num{flex:0 0 22px;width:22px;height:22px;line-height:22px;text-align:center;background:var(--ink);color:#fff;border-radius:50%;font-size:12px;font-weight:600}
+  .q{color:var(--ink2);font-size:12.5px;margin:0 0 14px;padding-left:31px}
+  .row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:11px}
+  .field{flex:1 1 150px;min-width:132px}
+  .field label{display:block;font-size:12.5px;color:var(--ink2);margin-bottom:5px}
+  .field input{
+    width:100%;padding:9px 11px;font-size:16px;border:1px solid var(--line2);border-radius:9px;
+    background:#fff;color:var(--ink);font-variant-numeric:tabular-nums;
+  }
+  .field input::placeholder{color:#bfb6a9;font-size:14px}
+  .field input:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:var(--accent)}
+  .hint{font-size:12px;color:var(--ink3);margin:6px 0 0;line-height:1.55}
+  .result{font-size:14.5px;margin-top:8px;min-height:26px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .val{font-weight:700;font-variant-numeric:tabular-nums}
+  .pill{display:inline-block;font-size:12px;font-weight:600;padding:2.5px 9px;border-radius:20px;white-space:nowrap}
+  .pill.good{background:var(--goodbg);color:var(--good)}
+  .pill.warn{background:var(--warnbg);color:var(--warn)}
+  .pill.bad{background:var(--badbg);color:var(--bad)}
+  .pill.na{background:#f0ece4;color:var(--ink3)}
+  .note-inline{font-size:12px;color:var(--ink3)}
+  .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:22px 0 16px}
+  button{padding:10px 18px;font-size:14.5px;border-radius:9px;border:none;cursor:pointer;font-family:inherit;transition:opacity .15s}
+  .primary{background:var(--ink);color:#fff}
+  .secondary{background:#fff;color:var(--ink);border:1px solid var(--line2)}
+  .ghost{background:transparent;color:var(--ink2);border:1px dashed var(--line2)}
+  button:hover{opacity:.82}
+  button:disabled{opacity:.4;cursor:default}
+  button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  #tip{font-size:13px;color:var(--good);min-height:20px}
+
+  .verdict{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:14px}
+  .verdict h3{margin:0 0 6px;font-size:15px}
+  .verdict .lead{font-size:13.5px;color:var(--ink2);margin:0}
+  .vbad{border-left:4px solid var(--bad)}
+  .vwarn{border-left:4px solid #d6a419}
+  .vgood{border-left:4px solid var(--good)}
+
+  .tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:14px;border:1px solid var(--line);background:#fff;margin-bottom:14px}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:420px}
+  th,td{padding:11px 13px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:#f4efe4;color:var(--ink2);font-size:12px;font-weight:600;letter-spacing:.02em;white-space:nowrap}
+  tr:last-child td{border-bottom:none}
+  td.cell{font-weight:600;white-space:nowrap}
+  td.numcell{font-variant-numeric:tabular-nums;white-space:nowrap}
+  td.good{color:var(--good)} td.warn{color:var(--warn)} td.bad{color:var(--bad)} td.na{color:var(--ink3)}
+
+  .asks{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 20px 18px 18px}
+  .asks h3{margin:0 0 10px;font-size:14px}
+  .asks ol{margin:0;padding-left:20px;font-size:13.5px;color:#443d34}
+  .asks li{margin-bottom:8px}
+  .asks li:last-child{margin-bottom:0}
+  .asks .tag{font-weight:650;color:var(--bad)}
+  .foot{font-size:12px;color:var(--ink3);margin-top:20px;line-height:1.7;max-width:68ch}
+  .hidden{display:none}
+
+  @media print{
+    body{background:#fff;padding:0;font-size:12px}
+    .actions,.hint,#tip{display:none!important}
+    .card,.verdict,.tablewrap,.asks{border-radius:0;box-shadow:none;break-inside:avoid;page-break-inside:avoid}
+    .card{margin-bottom:8px;padding:10px 12px}
+    .field input{border:none;border-bottom:1px solid #ccc;border-radius:0;padding:2px 0}
+    .pill{border:1px solid #bbb}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>财报五格体检表</h1>
+  <p class="sub">营收只填一次，五格自动算。金额统一一个单位，别混用。可直接粘贴财报原文的 <code>8,954</code>、<code>(5,670)</code> 写法（括号表示负数）。</p>
+
+  <!-- 基础数据 -->
+  <div class="card base">
+    <h2>基础数据</h2>
+    <p class="q">一次填齐，下面五格共用</p>
+    <div class="row">
+      <div class="field"><label for="company">公司</label><input id="company" type="text" placeholder="如：某 AI 公司" autocomplete="off"></div>
+      <div class="field"><label for="period">报告期</label><input id="period" type="text" placeholder="如：2026Q3" autocomplete="off"></div>
+      <div class="field"><label for="unit">单位</label><input id="unit" type="text" placeholder="如：亿美元" autocomplete="off"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label for="revCur">本期营收</label><input id="revCur" type="text" inputmode="decimal" placeholder="如：127.6" autocomplete="off"></div>
+      <div class="field"><label for="revPrev">去年同期营收</label><input id="revPrev" type="text" inputmode="decimal" placeholder="如：102.1" autocomplete="off"></div>
+      <div class="field"><label for="revLastQ">上季度营收 <span class="note-inline">（可选）</span></label><input id="revLastQ" type="text" inputmode="decimal" placeholder="如：108.5" autocomplete="off"></div>
+    </div>
+    <p class="hint">数从哪来：利润表第一行 Total revenues。同比增速看本期 vs 去年同期，成本率的环比变化看上季度营收。</p>
+  </div>
+
+  <!-- 1 -->
+  <div class="card">
+    <h2><span class="num">1</span>营收增速</h2>
+    <p class="q">生意在长吗？</p>
+    <div class="result" id="r1"></div>
+    <p class="hint">分档：≥20% 高速增长 · 5–20% 稳健 · 0–5% 停滞 · &lt;0 萎缩。名义增速要扣掉通胀和汇率才算真实增长。</p>
+  </div>
+
+  <!-- 2 -->
+  <div class="card">
+    <h2><span class="num">2</span>核心成本占比</h2>
+    <p class="q">赚钱变贵了吗？</p>
+    <div class="row">
+      <div class="field"><label for="costCur">本期核心成本</label><input id="costCur" type="text" inputmode="decimal" placeholder="如：38.4" autocomplete="off"></div>
+      <div class="field"><label for="costLastQ">上季核心成本 <span class="note-inline">（可选）</span></label><input id="costLastQ" type="text" inputmode="decimal" placeholder="如：35.2" autocomplete="off"></div>
+    </div>
+    <div class="result" id="r2"></div>
+    <p class="hint">数从哪来：利润表的 Cost of revenues（AI 公司常表现为算力与基础设施成本）。占比 = 核心成本 ÷ 营收，填上季数据后自动算环比变化。绝对水平跨行业不可比，所以只按"变化方向"判色。</p>
+  </div>
+
+  <!-- 3 -->
+  <div class="card">
+    <h2><span class="num">3</span>GAAP 经营利润</h2>
+    <p class="q">主业真赚钱吗？</p>
+    <div class="row">
+      <div class="field"><label for="opProfit">经营利润（亏损填负数）</label><input id="opProfit" type="text" inputmode="decimal" placeholder="如：-5.67" autocomplete="off"></div>
+    </div>
+    <div class="result" id="r3"></div>
+    <p class="hint">数从哪来：利润表的 Operating income（亏损是 Operating loss），照抄，别用 adjusted 口径。判色看<b>经营利润率</b>而不是绝对值——10 亿营收亏 5 亿和 1000 亿营收亏 5 亿完全不是一回事。</p>
+  </div>
+
+  <!-- 4 -->
+  <div class="card">
+    <h2><span class="num">4</span>自由现金流</h2>
+    <p class="q">现金是正流还是倒流？</p>
+    <div class="row">
+      <div class="field"><label for="ocf">经营现金流</label><input id="ocf" type="text" inputmode="decimal" placeholder="如：42.3" autocomplete="off"></div>
+      <div class="field"><label for="capex">资本开支</label><input id="capex" type="text" inputmode="decimal" placeholder="如：51.4" autocomplete="off"></div>
+    </div>
+    <div class="result" id="r4"></div>
+    <p class="hint">数从哪来：现金流量表。经营现金流 = Net cash provided by operating activities；资本开支 = Purchases of property and equipment。FCF = 前者 − 后者，判色看 FCF 占营收比。</p>
+  </div>
+
+  <!-- 5 -->
+  <div class="card">
+    <h2><span class="num">5</span>承诺支出对现金储备</h2>
+    <p class="q">未来的账付得起吗？</p>
+    <div class="row">
+      <div class="field"><label for="commit">承诺支出总额</label><input id="commit" type="text" inputmode="decimal" placeholder="如：8954" autocomplete="off"></div>
+      <div class="field"><label for="cash">现金及短期投资</label><input id="cash" type="text" inputmode="decimal" placeholder="如：1319" autocomplete="off"></div>
+      <div class="field"><label for="due12">其中 12 个月内到期 <span class="note-inline">（可选）</span></label><input id="due12" type="text" inputmode="decimal" placeholder="如：698" autocomplete="off"></div>
+    </div>
+    <div class="result" id="r5"></div>
+    <p class="hint">数从哪来：承诺支出在附注 Commitments / 合同义务表；现金在资产负债表（Cash and cash equivalents + Short-term investments）。填了 12 个月到期额会额外算<b>短期到期覆盖率</b>——这个比总额倍数更能反映真实流动性压力。</p>
+  </div>
+
+  <div class="actions">
+    <button class="primary" id="btnCopy" disabled>复制结果</button>
+    <button class="secondary" id="btnSample">填入示例</button>
+    <button class="ghost" id="btnClear">清空</button>
+    <span id="tip"></span>
+  </div>
+
+  <div id="verdict" class="hidden"></div>
+  <div id="tableOut" class="hidden"></div>
+  <div id="asks" class="asks hidden"></div>
+
+  <p class="foot">
+    红灯是提醒你去追问，不是判决：烧钱期的公司自由现金流也可能是负的，关键看经营现金流在涨还是在跌。倍数刻度（3 倍 / 5 倍）是粗经验，不是准则，重点看它在变大还是变小。<br>
+    数据来源：公司财报原文（SEC EDGAR 免费查：10-Q 季报、10-K 年报、S-1 招股书）。所有数据只存在本机浏览器里，不上传。
+  </p>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- 阈值配置：想改判据只改这里 ---------- */
+  var CFG = {
+    growth:    [{min: 20, k: 'good', t: '高速增长'}, {min: 5, k: 'good', t: '稳健增长'},
+                {min: 0, k: 'warn', t: '增长停滞'}, {min: -Infinity, k: 'bad', t: '营收萎缩'}],
+    costDelta: [{max: -2, k: 'good', t: '赚钱变便宜'}, {max: 2, k: 'warn', t: '占比基本持平'},
+                {max: Infinity, k: 'bad', t: '赚钱变贵'}],
+    opMargin:  [{min: 10, k: 'good', t: '主业赚钱'}, {min: 0, k: 'warn', t: '利润很薄'},
+                {min: -Infinity, k: 'bad', t: '主业亏钱'}],
+    fcfMargin: [{min: 10, k: 'good', t: '现金正流'}, {min: 0, k: 'warn', t: '现金刚打平'},
+                {min: -Infinity, k: 'bad', t: '现金倒流'}],
+    cover:     [{max: 3, k: 'good', t: '家底够付'}, {max: 5, k: 'warn', t: '要盯兑现进度'},
+                {max: Infinity, k: 'bad', t: '未来的账很重'}],
+    due:       [{max: 0.3, k: 'good', t: '短期压力小'}, {max: 0.6, k: 'warn', t: '短期到期偏高'},
+                {max: Infinity, k: 'bad', t: '短期集中到期'}]
+  };
+
+  var ASK = {
+    1: '增速是价格带动的还是销量带动的？有没有并购、汇率、一次性收入在里面？',
+    2: '成本涨是规模不够还是单位成本涨？剔除一次性项目后呢？',
+    3: '亏损在扩大还是收窄？拆开看研发 / 销售费用的增速，是投入前置还是毛利本身不行。',
+    4: '资本开支是维持性的还是扩张性的？把 capex 拆成维护与增长两部分再看。',
+    5: '付款节奏和经营性现金流对不对得上？现金能撑几个季度，需不需要再融资？'
+  };
+
+  var IDS = ['company','period','unit','revCur','revPrev','revLastQ','costCur','costLastQ',
+             'opProfit','ocf','capex','commit','cash','due12'];
+  var STORE = 'five-cell-check.v2';
+
+  /* ---------- 数值解析：兼容财报原文写法 ---------- */
+  function parseNum(raw) {
+    if (raw == null) return null;
+    var s = String(raw).trim().replace(/[,，\s_]/g, '');
+    if (s === '') return null;
+    var neg = false;
+    if (/^\(.+\)$/.test(s)) { neg = true; s = s.slice(1, -1); }
+    if (s.charAt(0) === '-') { neg = true; s = s.slice(1); }
+    else if (s.charAt(0) === '+') { s = s.slice(1); }
+    if (!/^\d*\.?\d+$/.test(s)) return null;
+    var v = parseFloat(s);
+    if (!isFinite(v)) return null;
+    return neg ? -v : v;
+  }
+  function val(id) { return parseNum(document.getElementById(id).value); }
+  function rawText(id) { return document.getElementById(id).value; }
+
+  var LABELS = {
+    revCur: '本期营收', revPrev: '去年同期营收', revLastQ: '上季度营收',
+    costCur: '本期核心成本', costLastQ: '上季核心成本', opProfit: '经营利润',
+    ocf: '经营现金流', capex: '资本开支', commit: '承诺支出', cash: '现金及短期投资',
+    due12: '12 个月内到期'
+  };
+  // 非空但解析不出数字 —— 必须报出来，不能静默当作"没填"
+  function badInputs() {
+    return Object.keys(LABELS).filter(function (id) {
+      var raw = rawText(id).trim();
+      return raw !== '' && parseNum(raw) === null;
+    });
+  }
+
+  function nf(x, d) {
+    if (x === null || x === undefined || !isFinite(x)) return '—';
+    if (d === undefined) {
+      var a = Math.abs(x);
+      d = a >= 1000 ? 0 : (a >= 10 ? 1 : 2);
+    }
+    var s = Math.abs(x).toLocaleString('zh-CN', {minimumFractionDigits: d, maximumFractionDigits: d});
+    s = s.replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '');   // 去掉尾随的 .0 / .00
+    return (x < 0 ? '-' : '') + s;
+  }
+  function pct(x) {
+    var d = Math.abs(x) >= 100 ? 0 : 1;
+    return (x >= 0 ? '+' : '') + nf(x, d) + '%';
+  }
+  function unitSuffix() {
+    var u = rawText('unit').trim();
+    return u ? ' ' + u : '';
+  }
+  function money(x) { return nf(x) + unitSuffix(); }
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+  function pick(rules, v) {
+    for (var i = 0; i < rules.length; i++) {
+      var r = rules[i];
+      if (r.min !== undefined && v >= r.min) return r;
+      if (r.max !== undefined && v <= r.max) return r;
+    }
+    return rules[rules.length - 1];
+  }
+  function pill(k, t) { return '<span class="pill ' + k + '">' + esc(t) + '</span>'; }
+  function naPill(t) { return '<span class="pill na">' + esc(t) + '</span>'; }
+
+  /* ---------- 当前状态 ---------- */
+  var results = {};  // 1..5 -> {n, v, c, k, extra}
+  var flags = [];    // 数据一致性提醒
+
+  /* ---------- 计算 ---------- */
+  function calc() {
+    results = {};
+    flags = [];
+
+    badInputs().forEach(function (id) {
+      flags.push('「' + LABELS[id] + '」里的「' + rawText(id).trim() + '」认不出数字，已当作未填，请只填数值（如 12.8）。');
+    });
+
+    var rev   = val('revCur');
+    var revP  = val('revPrev');
+    var revQ  = val('revLastQ');
+
+    // 1 营收增速
+    (function () {
+      var el = document.getElementById('r1');
+      if (rev === null || revP === null) {
+        el.innerHTML = '<span class="note-inline">填本期和去年同期营收，自动算增速</span>';
+        return;
+      }
+      if (revP <= 0) {
+        el.innerHTML = '<span class="note-inline">去年同期营收需为正数才能算增速</span>';
+        return;
+      }
+      var g = (rev - revP) / revP * 100;
+      var r = pick(CFG.growth, g);
+      el.innerHTML = '<span class="val">' + pct(g) + '</span>' + pill(r.k, r.t);
+      results[1] = {n: '营收增速', v: pct(g), c: r.t, k: r.k};
+      if (g >= 40) flags.push('增速 >40%：先确认基数是不是太小，或有没有并表/一次性收入。');
+    })();
+
+    // 2 核心成本占比
+    (function () {
+      var el = document.getElementById('r2');
+      var c = val('costCur'), cQ = val('costLastQ');
+      if (c === null || rev === null || rev <= 0) {
+        el.innerHTML = '<span class="note-inline">填本期核心成本和营收，自动算占比</span>';
+        return;
+      }
+      var s = c / rev * 100;
+      var html = '<span class="val">占比 ' + nf(s, 1) + '%</span>';
+      if (s > 100) {
+        flags.push('核心成本已超过营收：毛利率转负（' + nf(100 - s, 1) + '%），卖一件亏一件。');
+      }
+      var r = null, extra = '', deltaTxt = '';
+      if (cQ !== null && revQ !== null && revQ > 0) {
+        var sQ = cQ / revQ * 100;
+        var d = s - sQ;
+        r = pick(CFG.costDelta, d);
+        deltaTxt = (d >= 0 ? '升 ' : '降 ') + nf(Math.abs(d), 1) + ' 个点';
+        extra = '上季 ' + nf(sQ, 1) + '%，' + deltaTxt;
+        html += pill(r.k, r.t + '（' + (d >= 0 ? '+' : '−') + nf(Math.abs(d), 1) + 'pt）');
+      } else {
+        html += naPill('缺上季数据，只展示水平');
+        extra = '补上上季核心成本和上季营收后可判方向';
+      }
+      html += '<span class="note-inline">' + esc(extra) + '</span>';
+      el.innerHTML = html;
+      results[2] = {
+        n: '核心成本占比',
+        v: nf(s, 1) + '%',
+        c: r ? (r.t + '，' + deltaTxt) : '仅水平，未判方向',
+        k: r ? r.k : 'na'
+      };
+    })();
+
+    // 3 经营利润（按利润率判色）
+    (function () {
+      var el = document.getElementById('r3');
+      var op = val('opProfit');
+      if (op === null) {
+        el.innerHTML = '<span class="note-inline">填经营利润，正数赚钱、负数亏钱</span>';
+        return;
+      }
+      var html = '<span class="val">' + money(op) + '</span>';
+      if (rev !== null && rev > 0) {
+        var m = op / rev * 100;
+        var bad = Math.abs(m) > 300;
+        var r = bad ? {k: 'na', t: '量级存疑'} : pick(CFG.opMargin, m);
+        html += pill(r.k, r.t) + '<span class="note-inline">经营利润率 ' + pct(m) + '</span>';
+        results[3] = {n: 'GAAP 经营利润', v: money(op), c: r.t + '（利润率 ' + pct(m) + '）', k: r.k};
+        if (bad) {
+          flags.push('经营利润率算出 ' + pct(m) + '，量级明显不对，所以这一格不下结论——营收和利润大概率不是同一个单位（或填的是千元/百万元原始值）。');
+        }
+      } else {
+        var k = op > 0 ? 'good' : 'bad';
+        html += pill(k, op > 0 ? '主业赚钱' : '主业亏钱') +
+                '<span class="note-inline">缺营收，无法算利润率</span>';
+        results[3] = {n: 'GAAP 经营利润', v: money(op), c: op > 0 ? '主业赚钱' : '主业亏钱', k: k};
+      }
+      el.innerHTML = html;
+    })();
+
+    // 4 自由现金流（按 FCF margin 判色）
+    (function () {
+      var el = document.getElementById('r4');
+      var oc = val('ocf'), cx = val('capex');
+      if (oc === null || cx === null) {
+        el.innerHTML = '<span class="note-inline">填经营现金流和资本开支，自动相减</span>';
+        return;
+      }
+      var f = oc - cx;
+      var html = '<span class="val">' + money(f) + '</span>';
+      if (rev !== null && rev > 0) {
+        var m = f / rev * 100;
+        var bad = Math.abs(m) > 300;
+        var r = bad ? {k: 'na', t: '量级存疑'} : pick(CFG.fcfMargin, m);
+        html += pill(r.k, r.t) + '<span class="note-inline">占营收 ' + pct(m) + '</span>';
+        results[4] = {n: '自由现金流', v: money(f), c: r.t + '（占营收 ' + pct(m) + '）', k: r.k};
+        if (bad) {
+          flags.push('FCF 占营收算出 ' + pct(m) + '，量级明显不对，这一格不下结论——现金流和营收大概率不是同一个单位。');
+        }
+      } else {
+        var k = f > 0 ? 'good' : 'bad';
+        html += pill(k, f > 0 ? '现金正流' : '现金倒流') +
+                '<span class="note-inline">缺营收，无法算占比</span>';
+        results[4] = {n: '自由现金流', v: money(f), c: f > 0 ? '现金正流' : '现金倒流', k: k};
+      }
+      if (cx > oc) {
+        html += '<span class="note-inline">资本开支超过经营现金流</span>';
+      }
+      el.innerHTML = html;
+    })();
+
+    // 5 承诺支出对现金储备
+    (function () {
+      var el = document.getElementById('r5');
+      var cm = val('commit'), ca = val('cash'), d12 = val('due12');
+      if (cm === null || ca === null || ca <= 0) {
+        el.innerHTML = '<span class="note-inline">填承诺支出总额和现金及短期投资，自动算倍数</span>';
+        return;
+      }
+      if (cm < 0) flags.push('承诺支出为负：可能填了调整项或符号有误，回原文核对。');
+      if (d12 !== null && d12 > cm) flags.push('12 个月内到期额大于承诺总额，数据可能不对应同一口径。');
+
+      var m = cm / ca;
+      var r = pick(CFG.cover, m);
+      var html = '<span class="val">' + nf(m) + ' 倍</span>' + pill(r.k, r.t);
+      var extra = '';
+      var finalK = r.k, finalC = r.t;
+
+      if (d12 !== null && d12 >= 0) {
+        var cov = d12 / ca;                       // 短期到期 ÷ 现金
+        var rd = pick(CFG.due, cov);
+        extra = '短期到期覆盖 ' + nf(cov * 100, 0) + '%（' + nf(d12) + ' ÷ ' + nf(ca) + '）';
+        html += pill(rd.k, rd.t) + '<span class="note-inline">' + esc(extra) + '</span>';
+        // 两把尺子取更差的那个
+        var rank = {good: 0, warn: 1, bad: 2};
+        if (rank[rd.k] > rank[finalK]) { finalK = rd.k; finalC = rd.t + '（' + extra + '）'; }
+      } else {
+        html += '<span class="note-inline">补 12 个月到期额可算短期覆盖率</span>';
+      }
+
+      el.innerHTML = html;
+      results[5] = {
+        n: '承诺支出对现金储备',
+        v: nf(m) + ' 倍',
+        c: finalC + (extra ? '；' + extra : ''),
+        k: finalK
+      };
+    })();
+
+    draw();
+  }
+
+  /* ---------- 渲染总评 / 表格 / 追问 ---------- */
+  function draw() {
+    var list = [];
+    for (var i = 1; i <= 5; i++) if (results[i]) list.push(results[i]);
+
+    var vEl = document.getElementById('verdict');
+    var tEl = document.getElementById('tableOut');
+    var aEl = document.getElementById('asks');
+    var btn = document.getElementById('btnCopy');
+
+    var reds  = list.filter(function (r) { return r.k === 'bad'; });
+    var warns = list.filter(function (r) { return r.k === 'warn'; });
+    var company = rawText('company').trim();
+    var period  = rawText('period').trim();
+    var title = (company || '未填公司') + (period ? '（' + period + '）' : '');
+
+    btn.disabled = !list.length;
+
+    // 追问 + 数据核对：即使一格都没算成功，也要把"填错了"说出来
+    var askItems = reds.concat(warns).map(function (r) {
+      var idx = Object.keys(results).filter(function (k) { return results[k] === r; })[0];
+      return '<li><span class="tag">' + esc(r.n) + '：</span>' + esc(ASK[idx] || '') + '</li>';
+    }).join('');
+    var flagItems = flags.map(function (f) {
+      return '<li style="color:#8f6200"><span class="tag" style="color:#8f6200">数据核对：</span>' + esc(f) + '</li>';
+    }).join('');
+
+    if (!list.length) {
+      vEl.className = 'hidden';
+      tEl.className = 'hidden';
+      if (flagItems) {
+        aEl.innerHTML = '<h3>先修一下数据</h3><ol>' + flagItems + '</ol>';
+        aEl.classList.remove('hidden');
+      } else {
+        aEl.classList.add('hidden');
+      }
+      return;
+    }
+
+    // 总评
+    var lead, cls;
+    if (list.length < 3) {
+      lead = '已填 ' + list.length + '/5 格，至少填 3 格再下总评，否则容易被单个指标带偏。';
+      cls = 'vwarn';
+    } else if (!reds.length && !warns.length) {
+      lead = '五格全绿。结构上是健康的，接下来重点看增长能不能持续、成本优势能不能守住。';
+      cls = 'vgood';
+    } else if (!reds.length) {
+      lead = '无红灯，' + warns.length + ' 处黄灯（' + warns.map(function (r) { return r.n; }).join('、') +
+             '）。不算硬伤，但趋势已经在变，适合放进观察名单。';
+      cls = 'vwarn';
+    } else if (reds.length === 1) {
+      lead = '1 处红灯：' + reds[0].n + '。先把这一格弄明白再下结论——单点异常更多是口径或阶段性投入问题，别急着定性。';
+      cls = 'vwarn';
+    } else {
+      lead = reds.length + ' 处红灯（' + reds.map(function (r) { return r.n; }).join('、') +
+             '）。这是结构性信号，别只看单季，把近四个季度拉平了看趋势。';
+      cls = 'vbad';
+    }
+
+    vEl.className = 'verdict ' + cls;
+    vEl.innerHTML = '<h3>' + esc(title) + '</h3><p class="lead">' + esc(lead) + '</p>';
+    vEl.classList.remove('hidden');
+
+    // 表格
+    var rows = list.map(function (r) {
+      return '<tr><td class="cell">' + esc(r.n) + '</td><td class="numcell">' + esc(r.v) +
+             '</td><td class="' + r.k + '">' + esc(r.c) + '</td></tr>';
+    }).join('');
+    tEl.innerHTML = '<div class="tablewrap"><table><thead><tr><th>格子</th><th>数值</th><th>结论</th></tr></thead>' +
+                    '<tbody>' + rows + '</tbody></table></div>';
+    tEl.classList.remove('hidden');
+
+    // 追问清单
+    if (askItems || flagItems) {
+      aEl.innerHTML = '<h3>接下来该追问什么</h3><ol>' + askItems + flagItems + '</ol>';
+      aEl.classList.remove('hidden');
+    } else {
+      aEl.classList.add('hidden');
+    }
+  }
+
+  /* ---------- 复制 ---------- */
+  function plainText() {
+    var list = [];
+    for (var i = 1; i <= 5; i++) if (results[i]) list.push(results[i]);
+    if (!list.length) return '';
+    var company = rawText('company').trim();
+    var period  = rawText('period').trim();
+    var u = rawText('unit').trim();
+    var head = (company || '未填公司') + (period ? '（' + period + '）' : '') + ' 财报五格体检表' +
+               (u ? '｜单位：' + u : '');
+    var body = list.map(function (r) { return r.n + '：' + r.v + ' —— ' + r.c; }).join('\n');
+    var reds = list.filter(function (r) { return r.k === 'bad'; });
+    var tail = reds.length
+      ? '红灯 ' + reds.length + ' 个。红灯是提醒你去追问，不是判决。'
+      : '无红灯。结论基于五格口径，关键数字仍建议回原文核对一遍。';
+    return head + '\n' + body + '\n' + tail;
+  }
+
+  function copyDone(msg) {
+    var t = document.getElementById('tip');
+    t.textContent = msg || '已复制，去粘贴吧';
+    setTimeout(function () { t.textContent = ''; }, 2400);
+  }
+  function fallbackCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.top = '-1000px';
+    document.body.appendChild(ta);
+    ta.select();
+    var ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    document.body.removeChild(ta);
+    copyDone(ok ? null : '复制失败，请手动选中下方表格');
+  }
+
+  /* ---------- 持久化 ---------- */
+  var saveTimer = null;
+  function save() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(function () {
+      try {
+        var o = {};
+        IDS.forEach(function (id) { o[id] = document.getElementById(id).value; });
+        localStorage.setItem(STORE, JSON.stringify(o));
+      } catch (e) { /* 隐私模式下忽略 */ }
+    }, 250);
+  }
+  function restore() {
+    try {
+      var s = localStorage.getItem(STORE);
+      if (!s) return false;
+      var o = JSON.parse(s);
+      IDS.forEach(function (id) {
+        if (o[id] !== undefined) document.getElementById(id).value = o[id];
+      });
+      return true;
+    } catch (e) { return false; }
+  }
+
+  /* ---------- 示例 ---------- */
+  var SAMPLE = {
+    company: '示例·AI 基础设施公司', period: '2026Q3', unit: '亿美元',
+    revCur: '127.6', revPrev: '102.1', revLastQ: '108.5',
+    costCur: '38.4', costLastQ: '35.2',
+    opProfit: '-5.67', ocf: '42.3', capex: '51.4',
+    commit: '8954', cash: '1319', due12: '698'
+  };
+
+  /* ---------- 绑定 ---------- */
+  IDS.forEach(function (id) {
+    var el = document.getElementById(id);
+    el.addEventListener('input', function () { calc(); save(); });
+    el.addEventListener('change', function () { calc(); save(); });
+  });
+
+  document.getElementById('btnCopy').addEventListener('click', function () {
+    var text = plainText();
+    if (!text) return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { copyDone(); },
+                                               function () { fallbackCopy(text); });
+    } else {
+      fallbackCopy(text);
+    }
+  });
+
+  document.getElementById('btnSample').addEventListener('click', function () {
+    Object.keys(SAMPLE).forEach(function (k) { document.getElementById(k).value = SAMPLE[k]; });
+    calc(); save();
+  });
+
+  document.getElementById('btnClear').addEventListener('click', function () {
+    // 只清数字，保留公司与报告期，方便换季度连续录入
+    ['revCur','revPrev','revLastQ','costCur','costLastQ','opProfit','ocf','capex','commit','cash','due12']
+      .forEach(function (id) { document.getElementById(id).value = ''; });
+    document.getElementById('tip').textContent = '';
+    calc(); save();
+  });
+
+  // 初始：恢复上次数据，没有则空跑一次
+  restore();
+  calc();
+})();
+</script>
+</body>
+</html>
